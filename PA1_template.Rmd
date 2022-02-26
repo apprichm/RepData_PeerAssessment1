@@ -1,25 +1,175 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Reproducible Research - Week 2 - Course Project 1"
+author: "Martin R. Apprich"
+date: "24 February 2022"
+output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-## Loading and preprocessing the data
+## Purpose.
 
+The Purpose of this assignment is to analyze data from a personal activity device.  This device, which is worn by an individual, collects data on a 5-minute interval throughout the day.  The data consists of 2 months of data from an anonymous individual collected during the months of October and November, 2012 and includes the number of steps taken in 5 minute intervals each day.
 
+## The Data.
+The variables included in this dataset are:
 
-## What is mean total number of steps taken per day?
+steps: Number of steps taken in a 5-minute interval (missing values are coded as NA)<br />
+date: The date on which the measurement was taken in YYYY-MM-DD format<br />
+interval: Identifier for the 5-minute interval in which measurement was taken
 
+The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
 
+The dataset may be downloaded from this location:<br />
+https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip
 
-## What is the average daily activity pattern?
+## Task 1 - Loading and Pre-processing the Data.
+The dataset has already been loaded into the working directory. Set the working directory, load the data, assign variables for the raw and post-processed data (removing NA's). 
 
+Step 1: Load the data
+Step 2: Process/transform the data (if necessary) into a format suitable for your analysis (Remove NA's)
+```{r, echo=TRUE}
+setwd("D:/R Programming")
+raw_data <- read.csv("activity.csv", header = TRUE)
+post_data <- na.omit(raw_data)
+```
 
+Some preliminary exploration of the data:
+```{r, echo=TRUE}
+summary(raw_data)
+str(raw_data)
+head(raw_data)
+```
 
-## Imputing missing values
+## Task 2 - What is mean total number of steps taken per day?
 
+Step 1:  Using the aggregate function, calculate the total number of steps per day using a data frame with 2 columns DAY and SUM.
 
+```{r, echo=TRUE}
+steps_per_day <- aggregate(post_data$steps, by = list(Steps.Date = post_data$date), FUN = "sum")
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+Step 2:  Plot a histogram depicting the frequency distribution of total steps taken by day.
+
+```{r, echo=FALSE}
+hist(steps_per_day$x, col = "blue", 
+     breaks = 20,
+     main = "Total Number of Steps Taken Each Day",
+     xlab = "Number of Steps per Day")
+```
+
+Step 3:Calculate and report the mean and median of the total number of steps taken per day.
+
+Now calculate and print the MEAN: 
+```{r echo=TRUE}
+mean_steps <- mean(steps_per_day[,2])
+print(mean_steps)
+```
+
+Now calculate and print the MEDIAN.
+```{r, exho=FALSE}
+median_steps <- median(steps_per_day[,2])
+print(median_steps)
+```
+
+## Task 3 - What is the average daily activity pattern?
+
+Step 1: Below is a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis).
+
+```{r, echo=FALSE}
+avarage_day <- aggregate(post_data$steps, 
+                          by = list(Interval = post_data$interval), 
+                          FUN = "mean")
+plot(avarage_day$Interval, avarage_day$x, type = "l", 
+     main = "Average Daily Activity Pattern", 
+     ylab = "Avarage Steps Taken", 
+     xlab = "5 Minute Intervals",
+     col  = "blue")
+```
+
+Step 2:  Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r, echo-TRUE}
+interval_row <- which.max(avarage_day$x)
+max_interval <- avarage_day[interval_row,1]
+print (max_interval)
+```
+
+## Task 4 - Inputing missing values.
+There are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
+
+Step 1:  Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs) <br />
+
+```{r, echo=TRUE}
+NA_count <- length(which(is.na(raw_data$steps)))
+print (NA_count)
+```
+
+Step 2:  This step fills in all of the missing values in the dataset. This step uses the 'impute' function in the "Hmisc" package - it is assumed this package has already been installed in r.  <br />
+
+Step 3:  Create a new dataset that is equal to the original dataset but with the missing data filled in.<br />
+```{r include=FALSE}
+library(Hmisc)
+```
+
+```{r, echo=TRUE}
+raw_data_append <- raw_data
+raw_data_append$steps <- impute(raw_data$steps, fun=mean)
+```
+
+Step 4:  Make a histogram of the total number of steps taken each day. and Calculate and report the MEAN and MEDIAN total number of steps taken per day. 
+
+```{r, echo=FALSE}
+steps_per_day_no_NA <- aggregate(raw_data_append$steps, 
+                                by = list(Steps.Date = raw_data_append$date), 
+                                FUN = "sum")
+hist(steps_per_day_no_NA$x, col = "blue", 
+     breaks = 20,
+     main = "Total Number of Steps Taken Each Day (appended data)",
+     xlab = "Number of Steps Per Day")
+```
+
+The calculated MEAN:
+```{r, echo=TRUE}
+mean_steps_no_NA <- mean(steps_per_day_no_NA[,2])
+print (mean_steps_no_NA)
+```
+
+The calculated MEDIAN:
+```{r, echo=TRUE}
+median_steps_no_NA <- median(steps_per_day_no_NA[,2])
+print (median_steps_no_NA)
+```
+
+Do these values differ from the estimates from the first part of the assignment?<br /> The MEAN is the same; however, the MEDIAN is different.
+
+What is the impact of imputing missing data on the estimates of the total daily number of steps?<br />  The values substituted for the NA values is the MEAN of all of the other values, so the adjusted MEAN wwill be the same as the original MEAN, i.e. it will not change (having no effect on the MEAN); however, the MEDIAN changes as by definition the MEDIAN is the middle number in a set of values when those values are arranged from smallest to largest.  The substituted values case a re-order of the values.
+
+## Task 5 - Are there differences in activity patterns between weekdays and weekends?
+
+Step 1: Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.<br />
+ 
+```{r, echo=TRUE}
+raw_data_append$date <- as.Date(raw_data_append$date)
+raw_data_append$weekday <- weekdays(raw_data_append$date)
+raw_data_append$day_type <- ifelse(raw_data_append$weekday=="Saturday" |                                         raw_data_append$weekday=="Sunday","Weekend","Weekday")
+raw_data_append$day_type <- factor(raw_data_append$day_type)
+```
+
+Step 2: Below is a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+ 
+```{r, echo=TRUE}
+day_types_set <- aggregate(steps ~ interval + day_type, data=raw_data_append, mean)
+
+library(ggplot2)
+ggplot(day_types_set, aes(interval, steps)) + 
+        geom_line() + 
+        facet_grid(day_type ~ .) +
+        xlab("5 Minute Intervals") + 
+        ylab("Avarage Number of Steps Taken") +
+        ggtitle("Weekdays / Weekends Activity Patterns")
+```
+
+There ARE differences in acitvity patterns between weekdays and weekends as measured by the personal activity device.  The data shows that the number of steps on weekends is higher on average during the day, but the peak in the morning is higher on weekdays.
